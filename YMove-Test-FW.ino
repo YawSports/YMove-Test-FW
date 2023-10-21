@@ -9,32 +9,147 @@
 
 */
 
+// #define YMOVE
+//#if defined(YMOVE)
+  // YMOVE Device config
+//  #include "dev-ymove.hpp"
+
+// #elif define()
+
+//#else
+  // Test device with TinyS3
+  #include "dev-tinys3.hpp"
+//#endif
+
+// RGB LED
+#include <FastLED.h>  // http://librarymanager/All#FastLED
+
+// Simple Fusion
 #include <simpleFusion.h>  
 SimpleFusion fuser;               
 
+// LSM6DSOX
 #include <Adafruit_LSM6DSOX.h>
 Adafruit_LSM6DSOX lsm6ds;
 
+// LIS3MDL
 #include <Adafruit_LIS3MDL.h>
 Adafruit_LIS3MDL lis3mdl;
 
+// Untested
+#if defined(YMOVE)
+  // RTC - RV8803
+  #include <SparkFun_RV8803.h> //Get the library here:http://librarymanager/All#SparkFun_RV-8803
+  RV8803 rtc;
+
+  //The below variables control what the date and time will be set to
+  int sec = 2;
+  int minute = 47;
+  int hour = 14; //Set things in 24 hour mode
+  int date = 2;
+  int month = 3;
+  int year = 2023;
+  int weekday = 2;  
+
+  void setup_rtc(void);
+  void show_rtc(void);
+#endif
+
+// How many leds in your strip?
+// RGB LED
+#define DATA_PIN 18
+#define POWER_PIN 17
+#define NUM_LEDS 1
+#define BRIGHTNESS 100
+
+// Define the array of leds
+CRGB leds[NUM_LEDS];
 
 void setup_imu(void);
 void show_imu(void);
 
 void setup(void) {
-  // Serial init
+  //********** Serial init
   Serial.begin(115200);
-  while (!Serial)
+  while (!Serial) {
     delay(10); // will pause until serial console opens
+  }
 
+  //********** RGB Init and enable RGB LDO
+    FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);  // GRB ordering is assumed
+  pinMode(POWER_PIN, OUTPUT);
+  digitalWrite(POWER_PIN, HIGH);
+  FastLED.setBrightness(BRIGHTNESS);
+  blink_rgb();
+  
+  //********** IMU Init
   setup_imu();
+
+#if defined(YMOVE)
+  setup_rtc();
+
+#endif
+
 }
 
+  //********** LOOP
 void loop() {
   show_imu();
 }
 
+  //********** RGB Blink
+
+void blink_rgb(void) {
+  int i=0;
+  // Show RED
+  for(i=0;i<NUM_LEDS;i++) {
+    leds[i] = CRGB::Red;
+  }
+  FastLED.show();
+  delay(500);
+
+  // Show GREEN
+  for(i=0;i<NUM_LEDS;i++) {
+    leds[i] = CRGB::Green;
+  }
+  FastLED.show();
+  delay(500);
+
+  // Show BLUE
+  for(i=0;i<NUM_LEDS;i++) {
+    leds[i] = CRGB::Blue;
+  }
+  FastLED.show();
+  delay(500);
+
+  // Show BLACK/OFF
+  for(i=0;i<NUM_LEDS;i++) {
+    leds[i] = CRGB::Black;
+  }
+  FastLED.show();
+  delay(500);  
+
+}
+
+#if defined(YMOVE)
+  void setup_rtc(void) {
+    Wire.begin();
+    Serial.println("Set Time on RTC");
+
+    if (rtc.begin() == false)
+    {
+      Serial.println("Device not found. Please check wiring. Freezing.");
+      while(1);
+    }
+    Serial.println("RTC online!");
+    if (rtc.setTime(sec, minute, hour, weekday, date, month, year) == false) {
+      Serial.println("Something went wrong setting the time");
+      }
+    rtc.set24Hour(); //Uncomment this line if you'd like to set the RTC to 24 hour mode
+  }
+
+
+#endif
 
 void setup_imu(void) {
   fuser.init(1000000, 0.98, 0.98);    // Initialize the fusion object with the filter update rate (hertz) and 
@@ -176,6 +291,18 @@ void setup_imu(void) {
 // lsm6ds.configInt2(bool drdy_temp, bool drdy_g, bool drdy_xl);
 // lsm6ds.configIntOutputs(bool active_low, bool open_drain);
 
+// *** Pedometer
+// lsm6ds.enablePedometer(true);
+// lsm6ds.resetPedometer();
+// uint16_t steps = lsm6ds.readPedometer();
+
+// *** enable shake detection
+// lsm6ds.enableWakeup(true);
+
+// *** check for shake
+// if (lsm6ds.shake()) {
+//   Serial.println("SHAKE!");
+// }
 
   lis3mdl.setDataRate(LIS3MDL_DATARATE_155_HZ);
   // You can check the datarate by looking at the frequency of the DRDY pin
