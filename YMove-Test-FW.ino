@@ -53,7 +53,7 @@ Adafruit_LIS3MDL lis3mdl;
   #include <SparkFun_RV8803.h> // http://librarymanager/All#SparkFun_RV-8803
   RV8803 rtc;
 
-#elif
+#else
   // RTC - RV3028-C7
   #include <RV-3028-C7.h> // http://librarymanager/All#Constantin_Koch_RV-3028-C7
   RV3028 rtc;
@@ -88,9 +88,13 @@ void setup(void) {
   // ********** IMU Init
   setup_imu();
 
-#if defined(YMOVE)
+  // ********** RTC Set/Get DateTime
   setup_rtc();
   show_rtc();
+
+#if defined(YMOVE)
+
+#else
 
 #endif
 
@@ -136,7 +140,6 @@ void blink_rgb(void) {
 }
 
 // ********************* YMOVE ONLY ********************
-#if defined(YMOVE)
   // RTC
   void setup_rtc(void) {
     Wire.begin();
@@ -158,8 +161,8 @@ void blink_rgb(void) {
   void show_rtc(void) {
     if (rtc.updateTime() == true) //Updates the time variables from RTC
     {
-      String currentDate = rtc.stringDateUSA(); //Get the current date in mm/dd/yyyy format (we're weird)
-      //String currentDate = rtc.stringDate(); //Get the current date in dd/mm/yyyy format
+      //String currentDate = rtc.stringDateUSA(); //Get the current date in mm/dd/yyyy format (we're weird)
+      String currentDate = rtc.stringDate(); //Get the current date in dd/mm/yyyy format
       String currentTime = rtc.stringTime(); //Get the time
       Serial.print(currentDate);
       Serial.print(" ");
@@ -171,7 +174,9 @@ void blink_rgb(void) {
     }    
   }
 
-#elif
+#if defined(YMOVE)
+
+#else
   // TinyS3
 
 #endif
