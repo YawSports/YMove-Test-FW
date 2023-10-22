@@ -12,7 +12,7 @@
 // #define YMOVE
 //#if defined(YMOVE)
   // YMOVE Device config
-//  #include "dev-ymove.hpp"
+//  #include "dev-ymove.h"
 
 // #elif define()
 
@@ -25,22 +25,17 @@
 #include <FastLED.h>  // http://librarymanager/All#FastLED
 
 // Simple Fusion
-#include <simpleFusion.h>  
+#include <simpleFusion.h>  // http://librarymanager/All#simplefusion
 SimpleFusion fuser;               
 
 // LSM6DSOX
-#include <Adafruit_LSM6DSOX.h>
+#include <Adafruit_LSM6DSOX.h>  // http://librarymanager/All#Adafruit_LSM6DS
 Adafruit_LSM6DSOX lsm6ds;
 
 // LIS3MDL
-#include <Adafruit_LIS3MDL.h>
+#include <Adafruit_LIS3MDL.h>   // http://librarymanager/All#Adafruit_LIS3MDL
 Adafruit_LIS3MDL lis3mdl;
 
-// YMOVE ONLY
-#if defined(YMOVE)
-  // RTC - RV8803
-  #include <SparkFun_RV8803.h> //Get the library here:http://librarymanager/All#SparkFun_RV-8803
-  RV8803 rtc;
 
   //The below variables control what the date and time will be set to
   int sec = 2;
@@ -51,12 +46,25 @@ Adafruit_LIS3MDL lis3mdl;
   int year = 2023;
   int weekday = 2;  
 
-  void setup_rtc(void);
-  void show_rtc(void);
+
+// YMOVE ONLY
+#if defined(YMOVE)
+  // RTC - RV8803
+  #include <SparkFun_RV8803.h> // http://librarymanager/All#SparkFun_RV-8803
+  RV8803 rtc;
+
+#elif
+  // RTC - RV3028-C7
+  #include <RV-3028-C7.h> // http://librarymanager/All#Constantin_Koch_RV-3028-C7
+  RV3028 rtc;
+
 #endif
 
 // Define the array of leds
 CRGB leds[RGB_NUM_LEDS];
+
+void setup_rtc(void);
+void show_rtc(void);
 
 void setup_imu(void);
 void show_imu(void);
@@ -82,6 +90,7 @@ void setup(void) {
 
 #if defined(YMOVE)
   setup_rtc();
+  show_rtc();
 
 #endif
 
@@ -126,7 +135,9 @@ void blink_rgb(void) {
 
 }
 
+// ********************* YMOVE ONLY ********************
 #if defined(YMOVE)
+  // RTC
   void setup_rtc(void) {
     Wire.begin();
     Serial.println("Set Time on RTC");
@@ -136,6 +147,7 @@ void blink_rgb(void) {
       Serial.println("Device not found. Please check wiring. Freezing.");
       while(1);
     }
+
     Serial.println("RTC online!");
     if (rtc.setTime(sec, minute, hour, weekday, date, month, year) == false) {
       Serial.println("Something went wrong setting the time");
@@ -143,8 +155,27 @@ void blink_rgb(void) {
     rtc.set24Hour(); //Uncomment this line if you'd like to set the RTC to 24 hour mode
   }
 
+  void show_rtc(void) {
+    if (rtc.updateTime() == true) //Updates the time variables from RTC
+    {
+      String currentDate = rtc.stringDateUSA(); //Get the current date in mm/dd/yyyy format (we're weird)
+      //String currentDate = rtc.stringDate(); //Get the current date in dd/mm/yyyy format
+      String currentTime = rtc.stringTime(); //Get the time
+      Serial.print(currentDate);
+      Serial.print(" ");
+      Serial.println(currentTime);
+    }
+    else
+    {
+      Serial.print("RTC read failed");
+    }    
+  }
+
+#elif
+  // TinyS3
 
 #endif
+// ********************* YMOVE ONLY ********************
 
 void setup_imu(void) {
   fuser.init(1000000, 0.98, 0.98);    // Initialize the fusion object with the filter update rate (hertz) and 
