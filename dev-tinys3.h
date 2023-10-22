@@ -1,5 +1,5 @@
 
-/* YMOVE - PIN DEFS */
+/* PIN DEFS */
 
 #define BUTTON_BOOT 0
 #define BUTTON_USER 1
@@ -34,29 +34,22 @@
 #define I2C2_SDA 16
 #define I2C2_SCL 17
 
-//#define SD_SUPPORTED
-#if !defined(SD_SUPPORTED)
-  // eMMC
-  #define eMMC_DAT0 2
-  #define eMMC_DAT1 4
-  #define eMMC_DAT2 12
-  #define eMMC_DAT3 13
-  #define eMMC_CLK 14
-  #define eMMC_CMD 15
+/*
+#define SD_SUPPORTED
+#if defined(SD_SUPPORTED)
+  // Define SD SPI PINS
+
 #endif
+*/
 
 // RGB LED
-#define DATA_PIN 48
-#define POWER_PIN 38
+#define RGB_DATA_PIN 18
+#define RGB_NUM_LEDS 1
+#define RGB_POWER_PIN 17
+#define RGB_BRIGHTNESS 100
 
 #define LDO2_PIN 39
 #define PWR_SHUTDOWN 47
 
-// How many leds in your strip?
-#define NUM_LEDS 1
 
-// Define the array of leds
-CRGB leds[NUM_LEDS];
-
-#define BRIGHTNESS 100
 

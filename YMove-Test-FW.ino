@@ -18,7 +18,7 @@
 
 //#else
   // Test device with TinyS3
-  #include "dev-tinys3.hpp"
+  #include "dev-tinys3.h"
 //#endif
 
 // RGB LED
@@ -36,7 +36,7 @@ Adafruit_LSM6DSOX lsm6ds;
 #include <Adafruit_LIS3MDL.h>
 Adafruit_LIS3MDL lis3mdl;
 
-// Untested
+// YMOVE ONLY
 #if defined(YMOVE)
   // RTC - RV8803
   #include <SparkFun_RV8803.h> //Get the library here:http://librarymanager/All#SparkFun_RV-8803
@@ -55,34 +55,29 @@ Adafruit_LIS3MDL lis3mdl;
   void show_rtc(void);
 #endif
 
-// How many leds in your strip?
-// RGB LED
-#define DATA_PIN 18
-#define POWER_PIN 17
-#define NUM_LEDS 1
-#define BRIGHTNESS 100
-
 // Define the array of leds
-CRGB leds[NUM_LEDS];
+CRGB leds[RGB_NUM_LEDS];
 
 void setup_imu(void);
 void show_imu(void);
 
 void setup(void) {
-  //********** Serial init
+  // ********** Serial init
   Serial.begin(115200);
-  while (!Serial) {
-    delay(10); // will pause until serial console opens
-  }
 
-  //********** RGB Init and enable RGB LDO
-    FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);  // GRB ordering is assumed
-  pinMode(POWER_PIN, OUTPUT);
-  digitalWrite(POWER_PIN, HIGH);
-  FastLED.setBrightness(BRIGHTNESS);
+    
+  // while (!Serial) {
+  //   delay(10); // will pause until serial console opens
+  // }
+  
+  // ********** RGB Init and enable RGB LDO 
+  FastLED.addLeds<NEOPIXEL, RGB_DATA_PIN>(leds, RGB_NUM_LEDS);  // GRB ordering is assumed
+  pinMode(RGB_POWER_PIN, OUTPUT);
+  digitalWrite(RGB_POWER_PIN, HIGH);
+  FastLED.setBrightness(RGB_BRIGHTNESS);
   blink_rgb();
   
-  //********** IMU Init
+  // ********** IMU Init
   setup_imu();
 
 #if defined(YMOVE)
@@ -92,38 +87,38 @@ void setup(void) {
 
 }
 
-  //********** LOOP
+  // ********** LOOP
 void loop() {
   show_imu();
 }
 
-  //********** RGB Blink
+  // ********** RGB Blink
 
 void blink_rgb(void) {
   int i=0;
   // Show RED
-  for(i=0;i<NUM_LEDS;i++) {
+  for(i=0;i<RGB_NUM_LEDS;i++) {
     leds[i] = CRGB::Red;
   }
   FastLED.show();
   delay(500);
 
   // Show GREEN
-  for(i=0;i<NUM_LEDS;i++) {
+  for(i=0;i<RGB_NUM_LEDS;i++) {
     leds[i] = CRGB::Green;
   }
   FastLED.show();
   delay(500);
 
   // Show BLUE
-  for(i=0;i<NUM_LEDS;i++) {
+  for(i=0;i<RGB_NUM_LEDS;i++) {
     leds[i] = CRGB::Blue;
   }
   FastLED.show();
   delay(500);
 
   // Show BLACK/OFF
-  for(i=0;i<NUM_LEDS;i++) {
+  for(i=0;i<RGB_NUM_LEDS;i++) {
     leds[i] = CRGB::Black;
   }
   FastLED.show();
