@@ -1,25 +1,22 @@
 /* 
   YMove Device Test Firmware
+  By Sukesh Ashok Kumar
 
-  Libraries used:
-    - Adafruit_LSMDSOX
-    - Adafruit_LIS3MDL
-    - SimpleFusion
-
-
+  - LS6DSOX + LIS3DL
+  - RTC - RV8803 / RV3028-C7
+  - MAX17048
+  - BMP390
+  - RGB LED
 */
 
 // #define YMOVE
-//#if defined(YMOVE)
+#if defined(YMOVE)
   // YMOVE Device config
-//  #include "dev-ymove.h"
-
-// #elif define()
-
-//#else
+  #include "dev-ymove.h"
+#else
   // Test device with TinyS3
   #include "dev-tinys3.h"
-//#endif
+#endif
 
 // RGB LED
 #include <FastLED.h>  // http://librarymanager/All#FastLED
@@ -36,22 +33,29 @@ Adafruit_LSM6DSOX lsm6ds;
 #include <Adafruit_LIS3MDL.h>   // http://librarymanager/All#Adafruit_LIS3MDL
 Adafruit_LIS3MDL lis3mdl;
 
+// BMP390
+#include <Adafruit_Sensor.h>
+#include "Adafruit_BMP3XX.h"  // http://librarymanager/All#Adafruit_BMP3XX
+#define SEALEVELPRESSURE_HPA (1013.25)
+Adafruit_BMP3XX bmp;
 
-  //The below variables control what the date and time will be set to
-  int sec = 2;
-  int minute = 47;
-  int hour = 14; //Set things in 24 hour mode
-  int date = 2;
-  int month = 3;
-  int year = 2023;
-  int weekday = 2;  
-
+//The below variables control what the date and time will be set to
+int sec = 2;
+int minute = 47;
+int hour = 14;    //Set things in 24 hour mode
+int date = 2;
+int month = 3;
+int year = 2023;
+int weekday = 2;  
 
 // YMOVE ONLY
 #if defined(YMOVE)
   // RTC - RV8803
   #include <SparkFun_RV8803.h> // http://librarymanager/All#SparkFun_RV-8803
   RV8803 rtc;
+
+  #include "Adafruit_MAX1704X.h" // http://librarymanager/All#Adafruit_MAX1704X
+  Adafruit_MAX17048 maxlipo;
 
 #else
   // RTC - RV3028-C7
@@ -63,50 +67,76 @@ Adafruit_LIS3MDL lis3mdl;
 // Define the array of leds
 CRGB leds[RGB_NUM_LEDS];
 
+// BMP
+void setup_bmp(void);
+void show_bmp(void);
+
+// RTC
 void setup_rtc(void);
 void show_rtc(void);
 
+// IMU
 void setup_imu(void);
 void show_imu(void);
 
+
+// ********** SETUP
 void setup(void) {
   // ********** Serial init
   Serial.begin(115200);
-
-    
-  // while (!Serial) {
-  //   delay(10); // will pause until serial console opens
-  // }
   
+  while (!Serial); // will pause until serial console opens
+
+  Serial.println("*** YMOVE TEST FIRWARE ***");
+
   // ********** RGB Init and enable RGB LDO 
+  Serial.println("[RGB LED Test]");
   FastLED.addLeds<NEOPIXEL, RGB_DATA_PIN>(leds, RGB_NUM_LEDS);  // GRB ordering is assumed
   pinMode(RGB_POWER_PIN, OUTPUT);
   digitalWrite(RGB_POWER_PIN, HIGH);
   FastLED.setBrightness(RGB_BRIGHTNESS);
   blink_rgb();
   
-  // ********** IMU Init
-  setup_imu();
-
   // ********** RTC Set/Get DateTime
+  Serial.println("[RTC Test]");  
   setup_rtc();
   show_rtc();
 
-#if defined(YMOVE)
+  // ********** BMP390 Set/Get
+  Serial.println("[BP390 Test]");  
+  setup_bmp();
+  show_bmp();
 
+  // ********** IMU Init
+  Serial.println("[IMU Test]");  
+  setup_imu();
+
+#if defined(YMOVE)
+  Serial.println("[MAX17048 Test]");
+  if (!maxlipo.begin()) {
+    Serial.println(F("Couldnt find MAX17048?\nMake sure a battery is plugged in!"));
+  }
+  else {
+    Serial.print(F("Found MAX17048"));
+    Serial.print(F(" with Chip ID: 0x")); 
+    Serial.println(maxlipo.getChipID(), HEX);
+
+    Serial.print("Batt Voltage: "); Serial.print(maxlipo.cellVoltage(), 3); Serial.println(" V");
+    Serial.print("Batt Percent: "); Serial.print(maxlipo.cellPercent(), 1); Serial.println(" %");
+    Serial.println();
+  }
 #else
 
 #endif
 
 }
 
-  // ********** LOOP
+// ********** LOOP
 void loop() {
   show_imu();
 }
 
-  // ********** RGB Blink
-
+// ********** RGB Blink
 void blink_rgb(void) {
   int i=0;
   // Show RED
@@ -137,50 +167,79 @@ void blink_rgb(void) {
   FastLED.show();
   delay(500);  
 
+  Serial.println();
 }
 
-// ********************* YMOVE ONLY ********************
-  // RTC
-  void setup_rtc(void) {
-    Wire.begin();
-    Serial.println("Set Time on RTC");
+// ********** BMP390
+void setup_bmp() {
+  if (!bmp.begin_I2C()) {   // hardware I2C mode, can pass in address & alt Wire
+    Serial.println("Could not find a valid BMP3 sensor, check wiring!");
+  }
+  else {
+    // Set up oversampling and filter initialization
+    bmp.setTemperatureOversampling(BMP3_OVERSAMPLING_8X);
+    bmp.setPressureOversampling(BMP3_OVERSAMPLING_4X);
+    bmp.setIIRFilterCoeff(BMP3_IIR_FILTER_COEFF_3);
+    bmp.setOutputDataRate(BMP3_ODR_50_HZ);    
+  }
+}
 
-    if (rtc.begin() == false)
-    {
-      Serial.println("Device not found. Please check wiring. Freezing.");
-      while(1);
-    }
+void show_bmp() {
+  if (!bmp.performReading()) {
+    Serial.println("Failed to perform reading :(");
+  }
+  else {
+  Serial.print("Temperature = ");
+  Serial.print(bmp.temperature);
+  Serial.println(" *C");
 
-    Serial.println("RTC online!");
-    if (rtc.setTime(sec, minute, hour, weekday, date, month, year) == false) {
-      Serial.println("Something went wrong setting the time");
-      }
-    rtc.set24Hour(); //Uncomment this line if you'd like to set the RTC to 24 hour mode
+  Serial.print("Pressure = ");
+  Serial.print(bmp.pressure / 100.0);
+  Serial.println(" hPa");
+
+  Serial.print("Approx. Altitude = ");
+  Serial.print(bmp.readAltitude(SEALEVELPRESSURE_HPA));
+  Serial.println(" m");
+
+  Serial.println();    
+  }
+}
+
+// ********** RTC
+void setup_rtc(void) {
+  Wire.begin();
+  Serial.println("Set/Get Time on RTC");
+
+  if (rtc.begin() == false)
+  {
+    Serial.println("Device not found. Please check wiring. Freezing.");
+    while(1);
   }
 
-  void show_rtc(void) {
-    if (rtc.updateTime() == true) //Updates the time variables from RTC
-    {
-      //String currentDate = rtc.stringDateUSA(); //Get the current date in mm/dd/yyyy format (we're weird)
-      String currentDate = rtc.stringDate(); //Get the current date in dd/mm/yyyy format
-      String currentTime = rtc.stringTime(); //Get the time
-      Serial.print(currentDate);
-      Serial.print(" ");
-      Serial.println(currentTime);
+  Serial.println("RTC online! Setting Date/Time");
+  if (rtc.setTime(sec, minute, hour, weekday, date, month, year) == false) {
+    Serial.println("Something went wrong setting the time");
     }
-    else
-    {
-      Serial.print("RTC read failed");
-    }    
+  rtc.set24Hour(); //Uncomment this line if you'd like to set the RTC to 24 hour mode
+}
+
+void show_rtc(void) {
+  if (rtc.updateTime() == true) //Updates the time variables from RTC
+  {
+    //String currentDate = rtc.stringDateUSA(); //Get the current date in mm/dd/yyyy format (we're weird)
+    String currentDate = rtc.stringDate();      //Get the current date in dd/mm/yyyy format
+    String currentTime = rtc.stringTime();      //Get the time
+    Serial.print("Date/Time from RTC: ");
+    Serial.print(currentDate);
+    Serial.print(" ");
+    Serial.println(currentTime);
+    Serial.println();
   }
-
-#if defined(YMOVE)
-
-#else
-  // TinyS3
-
-#endif
-// ********************* YMOVE ONLY ********************
+  else
+  {
+    Serial.print("RTC read failed");
+  }    
+}
 
 void setup_imu(void) {
   fuser.init(1000000, 0.98, 0.98);    // Initialize the fusion object with the filter update rate (hertz) and 
@@ -202,6 +261,7 @@ void setup_imu(void) {
   }
 
   Serial.println("LSM6DSOX and LIS3MDL Found!");
+
   // lsm6ds.setAccelRange(LSM6DS_ACCEL_RANGE_2_G);
   Serial.print("Accelerometer range set to: ");
   switch (lsm6ds.getAccelRange()) {
@@ -380,12 +440,13 @@ void setup_imu(void) {
     case LIS3MDL_POWERDOWNMODE: Serial.println("Power-down"); break;
   }
 
+
+  Serial.println();
   lis3mdl.setIntThreshold(500);
   lis3mdl.configInterrupt(false, false, true, // enable z axis
                           true, // polarity
                           false, // don't latch
                           true); // enabled!
-
 }
 
 /* 
@@ -417,3 +478,12 @@ void show_imu(void) {
     Serial.print("Roll:");
     Serial.println(fusedAngles.roll);
 }
+
+// ********************* YMOVE ONLY ********************
+#if defined(YMOVE)
+
+#else
+  // TinyS3
+
+#endif
+// ********************* YMOVE ONLY ********************
