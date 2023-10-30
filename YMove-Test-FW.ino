@@ -9,6 +9,12 @@
   - RGB LED
 */
 
+#define LED_LSM6DSOX  0
+#define LED_LIS3MDL   1
+#define LED_BMP390    2
+#define LED_RTC       3
+#define LED_MAX17048  4
+
 // #define YMOVE
 #if defined(YMOVE)
   // YMOVE Device config
@@ -67,6 +73,9 @@ int weekday = 2;
 // Define the array of leds
 CRGB leds[RGB_NUM_LEDS];
 
+// RGB LED STATUS
+void show_led_status(int ledid, uint32_t r, uint32_t g, uint32_t b);
+
 // BMP
 void setup_bmp(void);
 void show_bmp(void);
@@ -107,10 +116,7 @@ void setup(void) {
   setup_bmp();
   show_bmp();
 
-  // ********** IMU Init
-  Serial.println("[IMU Test]");  
-  setup_imu();
-
+// Battery Juice
 #if defined(YMOVE)
   Serial.println("[MAX17048 Test]");
   if (!maxlipo.begin()) {
@@ -129,12 +135,44 @@ void setup(void) {
 
 #endif
 
+// ********** IMU Init
+random16_set_seed(8934);
+random16_add_entropy(analogRead(3));
+Serial.println("[IMU Test]");  
+setup_imu();
+
+
+// Long delay before Fusion random colors for IMU
+delay(1000);
 }
 
 // ********** LOOP
 void loop() {
   show_imu();
 }
+
+
+void show_led_status(int ledid, uint32_t r, uint32_t g, uint32_t b) {
+  if (ledid == -1) {  // IMU random colors
+    int i=0;
+    for(i=0;i<RGB_NUM_LEDS;i++) {
+      leds[i] = CRGB(r,g,b);
+    }
+    FastLED.show();
+    delay(10);
+  } else {  // Specific led
+
+#if defined(YMOVE)
+    leds[ledid] = CRGB(r,g,b);
+#else 
+    leds[0] = CRGB(r,g,b);
+#endif
+
+    FastLED.show();
+    delay(10);
+  }
+}
+
 
 // ********** RGB Blink
 void blink_rgb(void) {
@@ -174,6 +212,7 @@ void blink_rgb(void) {
 void setup_bmp() {
   if (!bmp.begin_I2C()) {   // hardware I2C mode, can pass in address & alt Wire
     Serial.println("Could not find a valid BMP3 sensor, check wiring!");
+    show_led_status(LED_BMP390,255,0,0);	// RED
   }
   else {
     // Set up oversampling and filter initialization
@@ -181,6 +220,7 @@ void setup_bmp() {
     bmp.setPressureOversampling(BMP3_OVERSAMPLING_4X);
     bmp.setIIRFilterCoeff(BMP3_IIR_FILTER_COEFF_3);
     bmp.setOutputDataRate(BMP3_ODR_50_HZ);    
+    show_led_status(LED_BMP390,0,255,0);	// GREEN
   }
 }
 
@@ -212,6 +252,7 @@ void setup_rtc(void) {
 
   if (rtc.begin() == false)
   {
+    show_led_status(3,255,0,0);
     Serial.println("Device not found. Please check wiring. Freezing.");
     while(1);
   }
@@ -221,6 +262,7 @@ void setup_rtc(void) {
     Serial.println("Something went wrong setting the time");
     }
   rtc.set24Hour(); //Uncomment this line if you'd like to set the RTC to 24 hour mode
+  show_led_status(3,0,255,0);
 }
 
 void show_rtc(void) {
@@ -316,6 +358,7 @@ void setup_imu(void) {
     Serial.println("6.66 KHz");
     break;
   }
+  Serial.println();
 
   // lsm6ds.setGyroRange(LSM6DS_GYRO_RANGE_250_DPS );
   Serial.print("Gyro range set to: ");
@@ -376,7 +419,7 @@ void setup_imu(void) {
     Serial.println("6.66 KHz");
     break;
   }
-
+  Serial.println();
 
 // lsm6ds.configInt1(bool drdy_temp, bool drdy_g, bool drdy_xl);
 // lsm6ds.configInt2(bool drdy_temp, bool drdy_g, bool drdy_xl);
@@ -439,9 +482,8 @@ void setup_imu(void) {
     case LIS3MDL_SINGLEMODE: Serial.println("Single mode"); break;
     case LIS3MDL_POWERDOWNMODE: Serial.println("Power-down"); break;
   }
-
-
   Serial.println();
+
   lis3mdl.setIntThreshold(500);
   lis3mdl.configInterrupt(false, false, true, // enable z axis
                           true, // polarity
@@ -477,6 +519,12 @@ void show_imu(void) {
     Serial.print(",");
     Serial.print("Roll:");
     Serial.println(fusedAngles.roll);
+
+    uint32_t r = (int)abs(fusedAngles.pitch);
+    uint32_t g = (int)abs(fusedAngles.roll);
+    uint32_t b = (uint32_t)random16();
+    show_led_status(-1,r,g,b);
+    
 }
 
 // ********************* YMOVE ONLY ********************
