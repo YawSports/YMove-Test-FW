@@ -96,7 +96,7 @@ void setup(void) {
   
   //while (!Serial); // will pause until serial console opens
 
-  Serial.println("*** YMOVE TEST FIRWARE ***");
+  Serial.println("*** YMOVE TEST FIRMWARE ***");
 
   // ********** RGB Init and enable RGB LDO 
   Serial.println("[RGB LED Test]");
@@ -116,23 +116,26 @@ void setup(void) {
   setup_bmp();
   show_bmp();
 
+Serial.println("[MAX17048 Test]");
 // Battery Juice
 #if defined(YMOVE)
-  Serial.println("[MAX17048 Test]");
   if (!maxlipo.begin()) {
     Serial.println(F("Couldnt find MAX17048?\nMake sure a battery is plugged in!"));
+    show_led_status(LED_MAX17048,255,0,0);	// RED
   }
   else {
-    Serial.print(F("Found MAX17048"));
+    Serial.print(F("MAX17048 found"));
     Serial.print(F(" with Chip ID: 0x")); 
     Serial.println(maxlipo.getChipID(), HEX);
 
     Serial.print("Batt Voltage: "); Serial.print(maxlipo.cellVoltage(), 3); Serial.println(" V");
     Serial.print("Batt Percent: "); Serial.print(maxlipo.cellPercent(), 1); Serial.println(" %");
     Serial.println();
+    show_led_status(LED_MAX17048,0,255,0);	// GREEN
   }
 #else
-
+  Serial.println("MAX17048 not found\n");
+  show_led_status(LED_MAX17048,255,0,0);	// RED
 #endif
 
 // ********** IMU Init
@@ -144,6 +147,7 @@ setup_imu();
 
 // Long delay before Fusion random colors for IMU
 delay(1000);
+Serial.println("[IMU OUTPUT]");  
 }
 
 // ********** LOOP
@@ -182,6 +186,7 @@ void blink_rgb(void) {
     leds[i] = CRGB::Red;
   }
   FastLED.show();
+  Serial.println("RGB: RED");
   delay(500);
 
   // Show GREEN
@@ -189,6 +194,7 @@ void blink_rgb(void) {
     leds[i] = CRGB::Green;
   }
   FastLED.show();
+  Serial.println("RGB: GREEN");
   delay(500);
 
   // Show BLUE
@@ -196,6 +202,7 @@ void blink_rgb(void) {
     leds[i] = CRGB::Blue;
   }
   FastLED.show();
+  Serial.println("RGB: BLUE");
   delay(500);
 
   // Show BLACK/OFF
@@ -203,6 +210,7 @@ void blink_rgb(void) {
     leds[i] = CRGB::Black;
   }
   FastLED.show();
+  Serial.println("RGB: BLACK/OFF");
   delay(500);  
 
   Serial.println();
@@ -505,6 +513,27 @@ void show_imu(void) {
   lsm6ds.getEvent(&accel, &gyro, &temp);
   lis3mdl.getEvent(&mag);
 
+  Serial.print("Temperature: ");  Serial.print(temp.temperature);
+  Serial.println(" deg C");
+
+  /* Display the results (acceleration is measured in m/s^2) */
+  Serial.print("Accel: ");  
+  Serial.print(accel.acceleration.x); Serial.print(",");  
+  Serial.print(accel.acceleration.y); Serial.print(",");  
+  Serial.print(accel.acceleration.z); Serial.println(" m/s^2 ");
+
+  /* Display the results (rotation is measured in rad/s) */
+  Serial.print("Gyro: ");  
+  Serial.print(gyro.gyro.x); Serial.print(","); 
+  Serial.print(gyro.gyro.y); Serial.print(","); 
+  Serial.print(gyro.gyro.z); Serial.println(" radians/s ");
+
+  /* Display the results (magnetic field is measured in uTesla) */
+  Serial.print("Mag: "); 
+  Serial.print(mag.magnetic.x); Serial.print(","); 
+  Serial.print(mag.magnetic.y); Serial.print(","); 
+  Serial.print(mag.magnetic.z); Serial.println(" uTesla ");
+
   FusedAngles fusedAngles;                  // Variable to store the output
   /* Fusion settings */
   ThreeAxis accelerometer;                  // Verify that the units are in meters / second ^ 2
@@ -523,12 +552,14 @@ void show_imu(void) {
   Serial.print(",");
   Serial.print("Roll:");
   Serial.println(fusedAngles.roll);
+  Serial.println();
 
-  uint32_t r = (int)abs(fusedAngles.pitch);
-  uint32_t g = (int)abs(fusedAngles.roll);
+  uint32_t r = (int)abs(fusedAngles.pitch)*10;
+  uint32_t g = (int)abs(fusedAngles.roll)*10;
   uint32_t b = (uint32_t)random16();
   show_led_status(-1,r,g,b);
     
+  //delayMicroseconds(10000);    
 }
 
 // ********************* YMOVE ONLY ********************

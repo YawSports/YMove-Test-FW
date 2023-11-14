@@ -13,8 +13,12 @@ Device Test Firmware 101
 
 ### EXPECTED SERIAL OUTPUT
 ```bash
-*** YMOVE TEST FIRWARE ***
+*** YMOVE TEST FIRMWARE ***
 [RGB LED Test]
+RGB: RED
+RGB: GREEN
+RGB: BLUE
+RGB: BLACK/OFF
 
 [RTC Test]
 Set/Get Time on RTC
@@ -25,6 +29,10 @@ Date/Time from RTC: 14/11/2023 14:47:02
 Temperature = 22.46 *C
 Pressure = 834.34 hPa
 Approx. Altitude = 1609.04 m
+
+[MAX17048 Test]
+MAX17048 found with Chip ID: 0xXXX
+Batt Voltage: 3.3 V, Batt Percent: 90 %
 
 [IMU Test]
 LSM6DSOX and LIS3MDL Found!
@@ -39,11 +47,12 @@ Magnetometer range set to: +-4 gauss
 Magnetometer performance mode set to: Medium
 Magnetometer operation mode set to: Continuous
 
+[IMU OUTPUT]
+Temperature: 27.58 deg C
+Accel: -0.03,-0.13,9.98 m/s^2 
+Gyro: -0.00,0.00,0.01 radians/s 
+Mag: 11.41,43.82,-10.41 uTesla 
 Pitch:0.00,Roll:-0.02
-Pitch:0.01,Roll:-0.03
-Pitch:0.01,Roll:-0.05
-Pitch:0.01,Roll:-0.06
-Pitch:0.01,Roll:-0.08
 ...
 ```
 
