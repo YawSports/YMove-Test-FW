@@ -1,6 +1,52 @@
 # YMove-Test
 Device Test Firmware 101
 
+### RGB LED STATUS
+```c++
+// Status LED settings
+#define LED_LSM6DSOX  0
+#define LED_LIS3MDL   1
+#define LED_BMP390    2
+#define LED_RTC       3
+#define LED_MAX17048  4
+```
+
+### EXPECTED SERIAL OUTPUT
+```bash
+*** YMOVE TEST FIRWARE ***
+[RGB LED Test]
+
+[RTC Test]
+Set/Get Time on RTC
+RTC online! Setting Date/Time
+Date/Time from RTC: 14/11/2023 14:47:02
+
+[BP390 Test]
+Temperature = 22.46 *C
+Pressure = 834.34 hPa
+Approx. Altitude = 1609.04 m
+
+[IMU Test]
+LSM6DSOX and LIS3MDL Found!
+Accelerometer range set to: +-4G
+Accelerometer data rate set to: 104 Hz
+
+Gyro range set to: 2000 degrees/s
+Gyro data rate set to: 104 Hz
+
+Magnetometer data rate set to: 155 Hz
+Magnetometer range set to: +-4 gauss
+Magnetometer performance mode set to: Medium
+Magnetometer operation mode set to: Continuous
+
+Pitch:0.00,Roll:-0.02
+Pitch:0.01,Roll:-0.03
+Pitch:0.01,Roll:-0.05
+Pitch:0.01,Roll:-0.06
+Pitch:0.01,Roll:-0.08
+...
+```
+
 ## DEVICE IO PINS
 ```
 IO01 - BUTTON_USER

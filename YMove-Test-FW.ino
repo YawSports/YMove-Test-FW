@@ -49,10 +49,10 @@ Adafruit_BMP3XX bmp;
 int sec = 2;
 int minute = 47;
 int hour = 14;    //Set things in 24 hour mode
-int date = 2;
-int month = 3;
+int date = 14;
+int month = 11;
 int year = 2023;
-int weekday = 2;  
+int weekday = 1;  
 
 // YMOVE ONLY
 #if defined(YMOVE)
@@ -94,7 +94,7 @@ void setup(void) {
   // ********** Serial init
   Serial.begin(115200);
   
-  while (!Serial); // will pause until serial console opens
+  //while (!Serial); // will pause until serial console opens
 
   Serial.println("*** YMOVE TEST FIRWARE ***");
 
@@ -252,9 +252,9 @@ void setup_rtc(void) {
 
   if (rtc.begin() == false)
   {
-    show_led_status(3,255,0,0);
+    show_led_status(LED_RTC,255,0,0);
     Serial.println("Device not found. Please check wiring. Freezing.");
-    while(1);
+    //while(1);
   }
 
   Serial.println("RTC online! Setting Date/Time");
@@ -262,7 +262,7 @@ void setup_rtc(void) {
     Serial.println("Something went wrong setting the time");
     }
   rtc.set24Hour(); //Uncomment this line if you'd like to set the RTC to 24 hour mode
-  show_led_status(3,0,255,0);
+  show_led_status(LED_RTC,0,255,0);
 }
 
 void show_rtc(void) {
@@ -280,6 +280,7 @@ void show_rtc(void) {
   else
   {
     Serial.print("RTC read failed");
+    show_led_status(LED_RTC,255,0,0);
   }    
 }
 
@@ -292,12 +293,15 @@ void setup_imu(void) {
 
   if (!lsm6ds_success){
     Serial.println("Failed to find LSM6DSOX chip");
+    show_led_status(LED_LSM6DSOX,255,0,0);
   }
   if (!lis3mdl_success){
     Serial.println("Failed to find LIS3MDL chip");
+    show_led_status(LED_LIS3MDL,255,0,0);
   }
+
   if (!(lsm6ds_success && lis3mdl_success)) {
-    while (1) {
+    while (1) { // Its ok to stop here since this test is last
       delay(10);
     }
   }
@@ -501,29 +505,29 @@ void show_imu(void) {
   lsm6ds.getEvent(&accel, &gyro, &temp);
   lis3mdl.getEvent(&mag);
 
-    FusedAngles fusedAngles;                  // Variable to store the output
-    /* Fusion settings */
-    ThreeAxis accelerometer;                  // Verify that the units are in meters / second ^ 2
-    accelerometer.x = accel.acceleration.x;
-    accelerometer.y = accel.acceleration.y;
-    accelerometer.z = accel.acceleration.z;
+  FusedAngles fusedAngles;                  // Variable to store the output
+  /* Fusion settings */
+  ThreeAxis accelerometer;                  // Verify that the units are in meters / second ^ 2
+  accelerometer.x = accel.acceleration.x;
+  accelerometer.y = accel.acceleration.y;
+  accelerometer.z = accel.acceleration.z;
 
-    ThreeAxis gyroscope;                      // Verify that the units are in raidans / second
-    gyroscope.x = gyro.gyro.x;
-    gyroscope.y = gyro.gyro.y;
-    gyroscope.z = gyro.gyro.z;
-    fuser.getFilteredAngles(accelerometer, gyroscope, &fusedAngles, UNIT_DEGREES);
+  ThreeAxis gyroscope;                      // Verify that the units are in raidans / second
+  gyroscope.x = gyro.gyro.x;
+  gyroscope.y = gyro.gyro.y;
+  gyroscope.z = gyro.gyro.z;
+  fuser.getFilteredAngles(accelerometer, gyroscope, &fusedAngles, UNIT_DEGREES);
 
-    Serial.print("Pitch:");
-    Serial.print(fusedAngles.pitch);
-    Serial.print(",");
-    Serial.print("Roll:");
-    Serial.println(fusedAngles.roll);
+  Serial.print("Pitch:");
+  Serial.print(fusedAngles.pitch);
+  Serial.print(",");
+  Serial.print("Roll:");
+  Serial.println(fusedAngles.roll);
 
-    uint32_t r = (int)abs(fusedAngles.pitch);
-    uint32_t g = (int)abs(fusedAngles.roll);
-    uint32_t b = (uint32_t)random16();
-    show_led_status(-1,r,g,b);
+  uint32_t r = (int)abs(fusedAngles.pitch);
+  uint32_t g = (int)abs(fusedAngles.roll);
+  uint32_t b = (uint32_t)random16();
+  show_led_status(-1,r,g,b);
     
 }
 
