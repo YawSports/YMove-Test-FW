@@ -15,7 +15,7 @@
 #define LED_RTC       3
 #define LED_MAX17048  4
 
-// #define YMOVE
+#define YMOVE
 #if defined(YMOVE)
   // YMOVE Device config
   #include "dev-ymove.h"
@@ -88,6 +88,51 @@ void show_rtc(void);
 void setup_imu(void);
 void show_imu(void);
 
+// Simple button class
+class Button {
+public:
+  Button(int pin) : pin(pin) {
+    pinMode(pin, INPUT_PULLUP);
+    state = digitalRead(pin);
+    lastState = state;
+    lastDebounceTime = 0;
+    debounceDelay = 50;
+  }
+
+  bool isPressed() {
+    int reading = digitalRead(pin);
+
+    if (reading != lastState) {
+      lastDebounceTime = millis();
+    }
+
+    if ((millis() - lastDebounceTime) > debounceDelay) {
+      if (reading != state) {
+        state = reading;
+
+        if (state == LOW) {
+          // Button is pressed
+          return true;
+        }
+      }
+    }
+
+    lastState = reading;
+    return false;
+  }
+
+private:
+  int pin;
+  int state;
+  int lastState;
+  unsigned long lastDebounceTime;
+  unsigned long debounceDelay;
+};
+
+Button boot_button(BUTTON_BOOT);
+#if defined(YMOVE)
+  Button user_button(BUTTON_USER);
+#endif
 
 // ********** SETUP
 void setup(void) {
@@ -97,6 +142,9 @@ void setup(void) {
   //while (!Serial); // will pause until serial console opens
 
   Serial.println("*** YMOVE TEST FIRMWARE ***");
+
+  Wire.begin(I2C1_SDA,I2C1_SCL);  // Set custom I2C pins (if/when required)
+  //Wire1.begin(I2C2_SDA,I2C2_SCL); // 2nd i2c qwiic connector
 
   // ********** RGB Init and enable RGB LDO 
   Serial.println("[RGB LED Test]");
@@ -153,8 +201,18 @@ Serial.println("[IMU OUTPUT]");
 // ********** LOOP
 void loop() {
   show_imu();
-}
+  if(boot_button.isPressed()) {
+    Serial.println("[BOOT BUTTON PRESSED]");
+    blink_rgb();
+  } 
 
+#if defined(YMOVE)  
+  if(user_button.isPressed()) {
+    Serial.println("[USER BUTTON PRESSED]");
+    blink_rgb();
+  } 
+#endif  
+}
 
 void show_led_status(int ledid, uint32_t r, uint32_t g, uint32_t b) {
   if (ledid == -1) {  // IMU random colors
@@ -255,7 +313,6 @@ void show_bmp() {
 
 // ********** RTC
 void setup_rtc(void) {
-  Wire.begin();
   Serial.println("Set/Get Time on RTC");
 
   if (rtc.begin() == false)
@@ -561,12 +618,3 @@ void show_imu(void) {
     
   //delayMicroseconds(10000);    
 }
-
-// ********************* YMOVE ONLY ********************
-#if defined(YMOVE)
-
-#else
-  // TinyS3
-
-#endif
-// ********************* YMOVE ONLY ********************
